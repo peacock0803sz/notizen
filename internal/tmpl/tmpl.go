@@ -14,9 +14,11 @@ var embeddedTemplates embed.FS
 // Load returns a parsed template by name (e.g. "diary/entry.md.tmpl").
 // Filesystem override at ~/.config/notizen/templates/ takes precedence over embedded defaults.
 func Load(name string) (*template.Template, error) {
-	overridePath := filepath.Join(configTemplateDir(), name)
-	if _, err := os.Stat(overridePath); err == nil {
-		return template.ParseFiles(overridePath)
+	if dir, err := configTemplateDir(); err == nil {
+		overridePath := filepath.Join(dir, name)
+		if _, err := os.Stat(overridePath); err == nil {
+			return template.ParseFiles(overridePath)
+		}
 	}
 
 	embeddedPath := filepath.Join("templates", name)
@@ -27,11 +29,14 @@ func Load(name string) (*template.Template, error) {
 	return t, nil
 }
 
-func configTemplateDir() string {
+func configTemplateDir() (string, error) {
 	configHome := os.Getenv("XDG_CONFIG_HOME")
 	if configHome == "" {
-		home, _ := os.UserHomeDir()
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", fmt.Errorf("cannot determine home directory: %w", err)
+		}
 		configHome = filepath.Join(home, ".config")
 	}
-	return filepath.Join(configHome, "notizen", "templates")
+	return filepath.Join(configHome, "notizen", "templates"), nil
 }
