@@ -55,7 +55,7 @@ func Link(sourceDir, repoPath, nameOverride string) (string, error) {
 
 func resolveRepoName(repoPath, nameOverride string) (string, error) {
 	if nameOverride != "" {
-		return nameOverride, nil
+		return filepath.Base(nameOverride), nil
 	}
 	cmd := exec.Command("git", "remote", "get-url", "origin")
 	cmd.Dir = repoPath
