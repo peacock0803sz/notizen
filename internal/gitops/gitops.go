@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"strings"
 	"time"
 )
 
@@ -15,6 +16,11 @@ func Sync(workDir string, out io.Writer, now time.Time) error {
 		return runCmd(workDir, out, args...)
 	}
 
+	branch, err := currentBranch(workDir)
+	if err != nil {
+		return fmt.Errorf("cannot determine current branch: %w", err)
+	}
+
 	if _, err := fmt.Fprintln(out, "Fetching origin..."); err != nil {
 		return err
 	}
@@ -22,10 +28,10 @@ func Sync(workDir string, out io.Writer, now time.Time) error {
 		return err
 	}
 
-	if _, err := fmt.Fprintln(out, "Pulling origin main..."); err != nil {
+	if _, err := fmt.Fprintf(out, "Pulling origin %s...\n", branch); err != nil {
 		return err
 	}
-	if err := run("git", "pull", "origin", "main"); err != nil {
+	if err := run("git", "pull", "origin", branch); err != nil {
 		return err
 	}
 
@@ -53,10 +59,20 @@ func Sync(workDir string, out io.Writer, now time.Time) error {
 		return err
 	}
 
-	if _, err := fmt.Fprintln(out, "Pushing to origin main..."); err != nil {
+	if _, err := fmt.Fprintf(out, "Pushing to origin %s...\n", branch); err != nil {
 		return err
 	}
-	return run("git", "push", "origin", "main")
+	return run("git", "push", "origin", branch)
+}
+
+func currentBranch(workDir string) (string, error) {
+	cmd := exec.Command("git", "branch", "--show-current")
+	cmd.Dir = workDir
+	out, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(out)), nil
 }
 
 func hasChanges(workDir string) (bool, error) {
