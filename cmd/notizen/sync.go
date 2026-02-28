@@ -18,9 +18,7 @@ func init() {
 	syncCmd.Flags().StringP("src", "s", "", "Local source directory (default: ~/.notizen/source)")
 	syncCmd.Flags().StringP("dest", "d", "", "Remote destination path (from config if unset)")
 	syncCmd.Flags().BoolP("dry-run", "n", false, "Preview without making changes")
-	syncCmd.Flags().Bool("delete", true, "Delete remote files not in source")
-	syncCmd.Flags().Bool("no-delete", false, "Do not delete remote files")
-	syncCmd.Flags().BoolP("recursive", "r", true, "Recursive sync")
+	syncCmd.Flags().Bool("no-delete", false, "Do not delete remote files not in source")
 	syncCmd.Flags().Bool("no-recursive", false, "Non-recursive sync")
 }
 
@@ -45,16 +43,8 @@ func runSync(cmd *cobra.Command, args []string) error {
 	}
 
 	dryRun, _ := cmd.Flags().GetBool("dry-run")
+	noDelete, _ := cmd.Flags().GetBool("no-delete")
+	noRecursive, _ := cmd.Flags().GetBool("no-recursive")
 
-	delete, _ := cmd.Flags().GetBool("delete")
-	if noDelete, _ := cmd.Flags().GetBool("no-delete"); noDelete {
-		delete = false
-	}
-
-	recursive, _ := cmd.Flags().GetBool("recursive")
-	if noRecursive, _ := cmd.Flags().GetBool("no-recursive"); noRecursive {
-		recursive = false
-	}
-
-	return remote.Sync(cfg, src, dryRun, delete, recursive, cmd.OutOrStdout())
+	return remote.Sync(cfg, src, dryRun, !noDelete, !noRecursive, cmd.OutOrStdout())
 }
