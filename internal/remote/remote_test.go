@@ -74,8 +74,8 @@ func TestBuildArgs_CustomPortAndKey(t *testing.T) {
 	if !strings.Contains(joined, "-p 2222") {
 		t.Errorf("expected -p 2222 in SSH command, got: %s", joined)
 	}
-	if !strings.Contains(joined, "-i /path/to/key") {
-		t.Errorf("expected -i /path/to/key in SSH command, got: %s", joined)
+	if !strings.Contains(joined, `-i "/path/to/key"`) {
+		t.Errorf(`expected -i "/path/to/key" in SSH command, got: %s`, joined)
 	}
 }
 

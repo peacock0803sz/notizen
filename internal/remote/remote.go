@@ -47,7 +47,7 @@ func buildArgs(cfg *config.RemoteConfig, src string, dryRun, delete, recursive b
 	// Build SSH command string
 	sshCmd := fmt.Sprintf("ssh -p %d", cfg.Port)
 	if cfg.Key != "" {
-		sshCmd += fmt.Sprintf(" -i %s", cfg.Key)
+		sshCmd += fmt.Sprintf(" -i %q", cfg.Key)
 	}
 	flags = append(flags, "-e", sshCmd)
 
