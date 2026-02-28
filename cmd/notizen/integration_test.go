@@ -60,7 +60,7 @@ func TestIntegration_DiaryDuplicate(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(tmpHome, ".config"))
 
 	// First call creates the entry
-	exec.Command(bin, "diary").Run()
+	_ = exec.Command(bin, "diary").Run()
 	// Second call must exit 0 and print "Already exists"
 	cmd := exec.Command(bin, "diary")
 	out, err := cmd.Output()
