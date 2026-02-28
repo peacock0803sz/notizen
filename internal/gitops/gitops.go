@@ -15,12 +15,16 @@ func Sync(workDir string, out io.Writer, now time.Time) error {
 		return runCmd(workDir, out, args...)
 	}
 
-	fmt.Fprintln(out, "Fetching origin...")
+	if _, err := fmt.Fprintln(out, "Fetching origin..."); err != nil {
+		return err
+	}
 	if err := run("git", "fetch", "origin"); err != nil {
 		return err
 	}
 
-	fmt.Fprintln(out, "Pulling origin main...")
+	if _, err := fmt.Fprintln(out, "Pulling origin main..."); err != nil {
+		return err
+	}
 	if err := run("git", "pull", "origin", "main"); err != nil {
 		return err
 	}
@@ -30,22 +34,28 @@ func Sync(workDir string, out io.Writer, now time.Time) error {
 		return err
 	}
 	if !changed {
-		fmt.Fprintln(out, "Nothing to commit.")
-		return nil
+		_, err := fmt.Fprintln(out, "Nothing to commit.")
+		return err
 	}
 
-	fmt.Fprintln(out, "Staging source/...")
+	if _, err := fmt.Fprintln(out, "Staging source/..."); err != nil {
+		return err
+	}
 	if err := run("git", "add", "source/"); err != nil {
 		return err
 	}
 
 	msg := fmt.Sprintf("Sync source/ at %s", now.Format("2006-01-02 15:04"))
-	fmt.Fprintf(out, "Committing: %s\n", msg)
+	if _, err := fmt.Fprintf(out, "Committing: %s\n", msg); err != nil {
+		return err
+	}
 	if err := run("git", "commit", "-m", msg); err != nil {
 		return err
 	}
 
-	fmt.Fprintln(out, "Pushing to origin main...")
+	if _, err := fmt.Fprintln(out, "Pushing to origin main..."); err != nil {
+		return err
+	}
 	return run("git", "push", "origin", "main")
 }
 

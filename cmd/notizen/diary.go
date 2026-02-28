@@ -37,7 +37,9 @@ func runDiary(cmd *cobra.Command, args []string) error {
 	path, err := diary.Create(sourceDir, mkdir, time.Now())
 	if err != nil {
 		if errors.Is(err, diary.ErrAlreadyExists) {
-			fmt.Fprintf(cmd.OutOrStdout(), "Already exists: %s\n", path)
+			if _, err := fmt.Fprintf(cmd.OutOrStdout(), "Already exists: %s\n", path); err != nil {
+				return err
+			}
 			return nil
 		}
 		return err
