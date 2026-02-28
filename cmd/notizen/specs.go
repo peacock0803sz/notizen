@@ -33,6 +33,6 @@ func runSpecs(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Fprintln(cmd.OutOrStdout(), msg)
-	return nil
+	_, err = fmt.Fprintln(cmd.OutOrStdout(), msg)
+	return err
 }

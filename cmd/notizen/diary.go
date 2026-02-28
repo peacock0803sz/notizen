@@ -45,6 +45,6 @@ func runDiary(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	fmt.Fprintln(cmd.OutOrStdout(), path)
-	return nil
+	_, err = fmt.Fprintln(cmd.OutOrStdout(), path)
+	return err
 }
