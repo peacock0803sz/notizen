@@ -34,8 +34,12 @@ func Link(sourceDir, repoPath, nameOverride string) (string, error) {
 		return "", err
 	}
 
-	branchName, _ := currentBranch(repoPath)
-	if err := writeSpecIndexes(linkDir, branchName); err != nil {
+	if _, err := os.Stat(specsTarget); err == nil {
+		branchName, _ := currentBranch(repoPath)
+		if err := writeSpecIndexes(linkDir, branchName); err != nil {
+			return "", err
+		}
+	} else if !errors.Is(err, os.ErrNotExist) {
 		return "", err
 	}
 
