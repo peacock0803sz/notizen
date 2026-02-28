@@ -66,6 +66,19 @@ func TestLoad_InvalidPortError(t *testing.T) {
 	}
 }
 
+func TestLoad_InvalidEnvPort(t *testing.T) {
+	clearEnv(t)
+	tmpDir := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", tmpDir)
+	t.Setenv("NOTIZEN_REMOTE_HOST", "h")
+	t.Setenv("NOTIZEN_REMOTE_PORT", "notanumber")
+
+	_, err := Load()
+	if err == nil {
+		t.Fatal("expected error for invalid NOTIZEN_REMOTE_PORT")
+	}
+}
+
 func TestLoad_DefaultPort22(t *testing.T) {
 	clearEnv(t)
 	tmpDir := t.TempDir()

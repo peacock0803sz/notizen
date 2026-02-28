@@ -30,17 +30,25 @@ type tomlFile struct {
 
 // Load reads RemoteConfig with precedence: env vars > ~/.config/notizen/config.toml.
 func Load() (*RemoteConfig, error) {
-	cfg := loadFromFile()
-	applyEnv(cfg)
+	cfg, err := loadFromFile()
+	if err != nil {
+		return nil, err
+	}
+	if err := applyEnv(cfg); err != nil {
+		return nil, err
+	}
 	return validate(cfg)
 }
 
-func loadFromFile() *RemoteConfig {
-	configPath := defaultConfigPath()
+func loadFromFile() (*RemoteConfig, error) {
+	configPath, err := defaultConfigPath()
+	if err != nil {
+		return nil, err
+	}
 	var f tomlFile
 	if _, err := toml.DecodeFile(configPath, &f); err != nil {
 		// Missing or unreadable config file is not fatal; env vars may provide all values.
-		return &RemoteConfig{}
+		return &RemoteConfig{}, nil
 	}
 	return &RemoteConfig{
 		Host: f.Remote.Host,
@@ -48,10 +56,10 @@ func loadFromFile() *RemoteConfig {
 		Port: f.Remote.Port,
 		Key:  f.Remote.Key,
 		Path: f.Remote.Path,
-	}
+	}, nil
 }
 
-func applyEnv(cfg *RemoteConfig) {
+func applyEnv(cfg *RemoteConfig) error {
 	if v := os.Getenv("NOTIZEN_REMOTE_HOST"); v != "" {
 		cfg.Host = v
 	}
@@ -59,9 +67,11 @@ func applyEnv(cfg *RemoteConfig) {
 		cfg.User = v
 	}
 	if v := os.Getenv("NOTIZEN_REMOTE_PORT"); v != "" {
-		if p, err := strconv.Atoi(v); err == nil {
-			cfg.Port = p
+		p, err := strconv.Atoi(v)
+		if err != nil {
+			return fmt.Errorf("invalid NOTIZEN_REMOTE_PORT %q: %w", v, err)
 		}
+		cfg.Port = p
 	}
 	if v := os.Getenv("NOTIZEN_REMOTE_KEY"); v != "" {
 		cfg.Key = v
@@ -69,6 +79,7 @@ func applyEnv(cfg *RemoteConfig) {
 	if v := os.Getenv("NOTIZEN_REMOTE_PATH"); v != "" {
 		cfg.Path = v
 	}
+	return nil
 }
 
 func validate(cfg *RemoteConfig) (*RemoteConfig, error) {
@@ -89,11 +100,14 @@ func validate(cfg *RemoteConfig) (*RemoteConfig, error) {
 	return cfg, nil
 }
 
-func defaultConfigPath() string {
+func defaultConfigPath() (string, error) {
 	configHome := os.Getenv("XDG_CONFIG_HOME")
 	if configHome == "" {
-		home, _ := os.UserHomeDir()
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", fmt.Errorf("cannot determine home directory: %w", err)
+		}
 		configHome = filepath.Join(home, ".config")
 	}
-	return filepath.Join(configHome, "notizen", "config.toml")
+	return filepath.Join(configHome, "notizen", "config.toml"), nil
 }
