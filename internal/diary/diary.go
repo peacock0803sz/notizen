@@ -2,6 +2,7 @@ package diary
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -51,7 +52,7 @@ func Create(sourceDir string, mkdir bool, now time.Time) (string, error) {
 	return entryPath, nil
 }
 
-var ErrAlreadyExists = fmt.Errorf("diary entry already exists")
+var ErrAlreadyExists = errors.New("diary entry already exists")
 
 // ensureDirs creates the Diaries/Year/Month directory hierarchy and index files for new dirs.
 func ensureDirs(sourceDir, year, month string, mkdir bool) error {
