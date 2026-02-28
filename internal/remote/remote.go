@@ -60,7 +60,7 @@ func buildArgs(cfg *config.RemoteConfig, src string, dryRun, delete, recursive b
 		dest += ":" + cfg.Path
 	}
 
-	return append(flags, src, dest)
+	return append(flags, "--", src, dest)
 }
 
 func mapError(err error) error {

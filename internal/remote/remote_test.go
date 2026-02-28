@@ -79,6 +79,24 @@ func TestBuildArgs_CustomPortAndKey(t *testing.T) {
 	}
 }
 
+func TestBuildArgs_DoubleDashSeparator(t *testing.T) {
+	args := BuildArgs(baseCfg(), "/src", false, false, true)
+	// "--" must appear before src and dest
+	var ddIdx int
+	for i, a := range args {
+		if a == "--" {
+			ddIdx = i
+			break
+		}
+	}
+	if ddIdx == 0 {
+		t.Fatalf("expected -- separator in args: %v", args)
+	}
+	if args[ddIdx+1] != "/src" {
+		t.Errorf("src should follow --, got %q", args[ddIdx+1])
+	}
+}
+
 func TestBuildArgs_UserAtHost(t *testing.T) {
 	cfg := &config.RemoteConfig{Host: "example.com", User: "deploy", Port: 22, Path: "/var/www"}
 	args := BuildArgs(cfg, "/src", false, false, true)
