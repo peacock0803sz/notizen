@@ -28,7 +28,7 @@ jobs:
 
       - name: Update flake inputs
         run: |
-          nix flake update && nix build .#default
+          nix flake update && nix flake check
 
           if [[ $(git status --untracked-files --short) ]]; then
             git add flake.lock
