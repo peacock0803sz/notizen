@@ -5,7 +5,7 @@ Personal notes and diary manager for the command line.
 ## Prerequisites
 
 - Go 1.25+ to build from source
-- git for `diary`, `commit`, and `specs`
+- git for `commit` and `specs` (skippable with `--name`)
 - rsync for `sync`
 
 ## Installation
@@ -76,7 +76,7 @@ Reads `~/.config/notizen/config.toml`, or `$XDG_CONFIG_HOME/notizen/config.toml`
 host = "example.com"
 user = "deploy"
 port = 22
-key  = "~/.ssh/id_ed25519"
+key  = "/home/you/.ssh/id_ed25519"
 path = "/var/www/notes"
 ```
 
