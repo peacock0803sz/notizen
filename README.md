@@ -61,7 +61,7 @@ Rsyncs `source/` to a remote server.
 
 ### `notizen specs <repo-path>`
 
-Symlinks a repository's spec artifacts into the notizen tree under `source/`.
+Symlinks a repository's `specs/` directory into `source/Agents/Specs/<repo-name>/`.
 
 | Flag | Description |
 |------|-------------|
@@ -112,6 +112,9 @@ Built-in templates:
         MM/
           index.md
           DD.md
+    Agents/
+      Specs/
+        <repo-name>/  -> /path/to/repo/specs/
 
 ~/.config/notizen/
   config.toml
