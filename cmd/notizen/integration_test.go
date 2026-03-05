@@ -241,7 +241,11 @@ func TestIntegration_DiaryEnvRootPermissionDenied(t *testing.T) {
 	if err := os.Chmod(readOnlyDir, 0o444); err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { os.Chmod(readOnlyDir, 0o755) })
+	t.Cleanup(func() {
+		if err := os.Chmod(readOnlyDir, 0o755); err != nil {
+			t.Log(err)
+		}
+	})
 
 	t.Setenv("HOME", tmpHome)
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(tmpHome, ".config"))
