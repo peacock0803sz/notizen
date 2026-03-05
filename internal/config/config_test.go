@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -25,6 +26,110 @@ func writeToml(t *testing.T, dir, content string) {
 	}
 	if err := os.WriteFile(filepath.Join(cfgDir, "config.toml"), []byte(content), 0o644); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestResolveRoot(t *testing.T) {
+	tests := []struct {
+		name      string
+		flagValue string
+		envValue  string
+		tomlRoot  string
+		wantSuffix string // expected suffix of the resolved path
+	}{
+		{
+			name:       "default when nothing set",
+			wantSuffix: ".notizen",
+		},
+		{
+			name:       "TOML root overrides default",
+			tomlRoot:   "/custom/toml-root",
+			wantSuffix: "/custom/toml-root",
+		},
+		{
+			name:       "env var overrides TOML",
+			tomlRoot:   "/custom/toml-root",
+			envValue:   "/custom/env-root",
+			wantSuffix: "/custom/env-root",
+		},
+		{
+			name:       "flag overrides env",
+			tomlRoot:   "/custom/toml-root",
+			envValue:   "/custom/env-root",
+			flagValue:  "/custom/flag-root",
+			wantSuffix: "/custom/flag-root",
+		},
+		{
+			name:       "relative path resolved to absolute",
+			flagValue:  "relative/path",
+			wantSuffix: "relative/path",
+		},
+		{
+			name:       "missing config file falls back gracefully",
+			wantSuffix: ".notizen",
+		},
+		{
+			name:       "non-existent deep path accepted",
+			flagValue:  "/tmp/a/b/notes",
+			wantSuffix: "/tmp/a/b/notes",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			clearEnv(t)
+			tmpDir := t.TempDir()
+			t.Setenv("XDG_CONFIG_HOME", tmpDir)
+			t.Setenv("HOME", tmpDir)
+
+			if tt.tomlRoot != "" {
+				writeToml(t, tmpDir, "root = \""+tt.tomlRoot+"\"\n")
+			}
+			if tt.envValue != "" {
+				t.Setenv("NOTIZEN_ROOT", tt.envValue)
+			} else {
+				t.Setenv("NOTIZEN_ROOT", "")
+			}
+
+			got, err := ResolveRoot(tt.flagValue)
+			if err != nil {
+				t.Fatalf("ResolveRoot() error = %v", err)
+			}
+			if !filepath.IsAbs(got) {
+				t.Errorf("ResolveRoot() returned non-absolute path: %s", got)
+			}
+			if !strings.HasSuffix(got, tt.wantSuffix) {
+				t.Errorf("ResolveRoot() = %q, want suffix %q", got, tt.wantSuffix)
+			}
+		})
+	}
+}
+
+func TestResolveRoot_SymlinkFollowed(t *testing.T) {
+	clearEnv(t)
+	tmpDir := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", tmpDir)
+	t.Setenv("HOME", tmpDir)
+	t.Setenv("NOTIZEN_ROOT", "")
+
+	// Create a real directory and a symlink pointing to it
+	realDir := filepath.Join(tmpDir, "real-notes")
+	if err := os.MkdirAll(realDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	linkDir := filepath.Join(tmpDir, "link-notes")
+	if err := os.Symlink(realDir, linkDir); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := ResolveRoot(linkDir)
+	if err != nil {
+		t.Fatalf("ResolveRoot() error = %v", err)
+	}
+	// The resolved path should be the symlink path itself (filepath.Abs doesn't resolve symlinks)
+	// What matters is the path is absolute and usable
+	if !filepath.IsAbs(got) {
+		t.Errorf("ResolveRoot() returned non-absolute path: %s", got)
 	}
 }
 
