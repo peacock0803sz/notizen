@@ -31,10 +31,10 @@ func writeToml(t *testing.T, dir, content string) {
 
 func TestResolveRoot(t *testing.T) {
 	tests := []struct {
-		name      string
-		flagValue string
-		envValue  string
-		tomlRoot  string
+		name       string
+		flagValue  string
+		envValue   string
+		tomlRoot   string
 		wantSuffix string // expected suffix of the resolved path
 	}{
 		{
