@@ -158,6 +158,189 @@ func TestIntegration_DiaryConfigRootAutoCreatesDeepPath(t *testing.T) {
 	}
 }
 
+// --- US2: Environment variable override tests ---
+
+func TestIntegration_DiaryEnvRoot(t *testing.T) {
+	bin := buildBinary(t)
+	tmpHome := t.TempDir()
+	envRoot := filepath.Join(tmpHome, "env-notes")
+	t.Setenv("HOME", tmpHome)
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(tmpHome, ".config"))
+	t.Setenv("NOTIZEN_ROOT", envRoot)
+
+	cmd := exec.Command(bin, "diary")
+	out, err := cmd.Output()
+	if err != nil {
+		t.Fatalf("diary command failed: %v, output: %s", err, out)
+	}
+	path := strings.TrimSpace(string(out))
+	if !strings.HasPrefix(path, envRoot) {
+		t.Errorf("diary path = %q, want prefix %q", path, envRoot)
+	}
+}
+
+func TestIntegration_DiaryEnvOverridesConfig(t *testing.T) {
+	bin := buildBinary(t)
+	tmpHome := t.TempDir()
+	configRoot := filepath.Join(tmpHome, "config-notes")
+	envRoot := filepath.Join(tmpHome, "env-notes")
+	t.Setenv("HOME", tmpHome)
+
+	cfgDir := filepath.Join(tmpHome, ".config", "notizen")
+	if err := os.MkdirAll(cfgDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	tomlContent := "root = \"" + configRoot + "\"\n"
+	if err := os.WriteFile(filepath.Join(cfgDir, "config.toml"), []byte(tomlContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(tmpHome, ".config"))
+	t.Setenv("NOTIZEN_ROOT", envRoot)
+
+	cmd := exec.Command(bin, "diary")
+	out, err := cmd.Output()
+	if err != nil {
+		t.Fatalf("diary command failed: %v, output: %s", err, out)
+	}
+	path := strings.TrimSpace(string(out))
+	if !strings.HasPrefix(path, envRoot) {
+		t.Errorf("diary path = %q, want prefix %q (env should win over config)", path, envRoot)
+	}
+}
+
+func TestIntegration_DiaryEnvRootAutoCreatesDeepPath(t *testing.T) {
+	bin := buildBinary(t)
+	tmpHome := t.TempDir()
+	deepRoot := filepath.Join(tmpHome, "x", "y", "env-notes")
+	t.Setenv("HOME", tmpHome)
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(tmpHome, ".config"))
+	t.Setenv("NOTIZEN_ROOT", deepRoot)
+
+	cmd := exec.Command(bin, "diary")
+	out, err := cmd.Output()
+	if err != nil {
+		t.Fatalf("diary command failed: %v, output: %s", err, out)
+	}
+	path := strings.TrimSpace(string(out))
+	if !strings.HasPrefix(path, deepRoot) {
+		t.Errorf("diary path = %q, want prefix %q", path, deepRoot)
+	}
+	sourceDir := filepath.Join(deepRoot, "source")
+	if _, err := os.Stat(sourceDir); err != nil {
+		t.Errorf("source directory not created: %v", err)
+	}
+}
+
+func TestIntegration_DiaryEnvRootPermissionDenied(t *testing.T) {
+	bin := buildBinary(t)
+	tmpHome := t.TempDir()
+	readOnlyDir := filepath.Join(tmpHome, "readonly")
+	if err := os.MkdirAll(readOnlyDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(readOnlyDir, 0o444); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { os.Chmod(readOnlyDir, 0o755) })
+
+	t.Setenv("HOME", tmpHome)
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(tmpHome, ".config"))
+	t.Setenv("NOTIZEN_ROOT", filepath.Join(readOnlyDir, "notes"))
+
+	cmd := exec.Command(bin, "diary")
+	out, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Fatal("expected non-zero exit for permission-denied root")
+	}
+	output := string(out)
+	if !strings.Contains(output, "readonly") {
+		t.Errorf("stderr should mention the path, got: %s", output)
+	}
+}
+
+// --- US3: CLI flag override tests ---
+
+func TestIntegration_DiaryFlagRoot(t *testing.T) {
+	bin := buildBinary(t)
+	tmpHome := t.TempDir()
+	flagRoot := filepath.Join(tmpHome, "flag-notes")
+	t.Setenv("HOME", tmpHome)
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(tmpHome, ".config"))
+	t.Setenv("NOTIZEN_ROOT", "")
+
+	cmd := exec.Command(bin, "--root", flagRoot, "diary")
+	out, err := cmd.Output()
+	if err != nil {
+		t.Fatalf("diary command failed: %v, output: %s", err, out)
+	}
+	path := strings.TrimSpace(string(out))
+	if !strings.HasPrefix(path, flagRoot) {
+		t.Errorf("diary path = %q, want prefix %q", path, flagRoot)
+	}
+}
+
+func TestIntegration_DiaryFlagOverridesAll(t *testing.T) {
+	bin := buildBinary(t)
+	tmpHome := t.TempDir()
+	configRoot := filepath.Join(tmpHome, "config-notes")
+	envRoot := filepath.Join(tmpHome, "env-notes")
+	flagRoot := filepath.Join(tmpHome, "flag-notes")
+	t.Setenv("HOME", tmpHome)
+
+	cfgDir := filepath.Join(tmpHome, ".config", "notizen")
+	if err := os.MkdirAll(cfgDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	tomlContent := "root = \"" + configRoot + "\"\n"
+	if err := os.WriteFile(filepath.Join(cfgDir, "config.toml"), []byte(tomlContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(tmpHome, ".config"))
+	t.Setenv("NOTIZEN_ROOT", envRoot)
+
+	cmd := exec.Command(bin, "--root", flagRoot, "diary")
+	out, err := cmd.Output()
+	if err != nil {
+		t.Fatalf("diary command failed: %v, output: %s", err, out)
+	}
+	path := strings.TrimSpace(string(out))
+	if !strings.HasPrefix(path, flagRoot) {
+		t.Errorf("diary path = %q, want prefix %q (flag should win over env and config)", path, flagRoot)
+	}
+}
+
+func TestIntegration_DiaryFlagRootSymlink(t *testing.T) {
+	bin := buildBinary(t)
+	tmpHome := t.TempDir()
+	realDir := filepath.Join(tmpHome, "real-notes")
+	if err := os.MkdirAll(realDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	linkDir := filepath.Join(tmpHome, "link-notes")
+	if err := os.Symlink(realDir, linkDir); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("HOME", tmpHome)
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(tmpHome, ".config"))
+	t.Setenv("NOTIZEN_ROOT", "")
+
+	cmd := exec.Command(bin, "--root", linkDir, "diary")
+	out, err := cmd.Output()
+	if err != nil {
+		t.Fatalf("diary command failed: %v, output: %s", err, out)
+	}
+	path := strings.TrimSpace(string(out))
+	// File should exist regardless of whether path goes through symlink or real dir
+	if _, err := os.Stat(path); err != nil {
+		t.Errorf("created file not found: %v", err)
+	}
+	// source/ should exist under the real directory
+	sourceDir := filepath.Join(realDir, "source")
+	if _, err := os.Stat(sourceDir); err != nil {
+		t.Errorf("source directory not found under real dir: %v", err)
+	}
+}
+
 func TestIntegration_VersionFlag(t *testing.T) {
 	bin := buildBinary(t)
 	out, err := exec.Command(bin, "--version").Output()
