@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/peacock0803sz/notizen/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -16,6 +17,10 @@ var rootCmd = &cobra.Command{
 	Version: version,
 }
 
+func init() {
+	rootCmd.PersistentFlags().String("root", "", "Root directory for notizen data")
+}
+
 func main() {
 	rootCmd.AddCommand(diaryCmd, commitCmd, syncCmd, specsCmd)
 	if err := rootCmd.Execute(); err != nil {
@@ -23,13 +28,13 @@ func main() {
 	}
 }
 
-// ensureRoot ensures ~/.notizen and ~/.notizen/source exist, creating them if needed.
+// ensureRoot resolves the notizen root directory and ensures it (and root/source) exist.
 func ensureRoot() (string, error) {
-	home, err := os.UserHomeDir()
+	flagValue, _ := rootCmd.PersistentFlags().GetString("root")
+	root, err := config.ResolveRoot(flagValue)
 	if err != nil {
-		return "", fmt.Errorf("could not determine home directory: %w", err)
+		return "", fmt.Errorf("could not resolve root directory: %w", err)
 	}
-	root := filepath.Join(home, ".notizen")
 	source := filepath.Join(root, "source")
 	if err := os.MkdirAll(source, 0o755); err != nil {
 		return "", fmt.Errorf("failed to create directory %s: %w", source, err)
