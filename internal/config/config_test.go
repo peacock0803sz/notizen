@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -43,26 +44,26 @@ func TestResolveRoot(t *testing.T) {
 		},
 		{
 			name:       "TOML root overrides default",
-			tomlRoot:   "/custom/toml-root",
-			wantSuffix: "/custom/toml-root",
+			tomlRoot:   filepath.Join("/custom", "toml-root"),
+			wantSuffix: filepath.Join("custom", "toml-root"),
 		},
 		{
 			name:       "env var overrides TOML",
-			tomlRoot:   "/custom/toml-root",
-			envValue:   "/custom/env-root",
-			wantSuffix: "/custom/env-root",
+			tomlRoot:   filepath.Join("/custom", "toml-root"),
+			envValue:   filepath.Join("/custom", "env-root"),
+			wantSuffix: filepath.Join("custom", "env-root"),
 		},
 		{
 			name:       "flag overrides env",
-			tomlRoot:   "/custom/toml-root",
-			envValue:   "/custom/env-root",
-			flagValue:  "/custom/flag-root",
-			wantSuffix: "/custom/flag-root",
+			tomlRoot:   filepath.Join("/custom", "toml-root"),
+			envValue:   filepath.Join("/custom", "env-root"),
+			flagValue:  filepath.Join("/custom", "flag-root"),
+			wantSuffix: filepath.Join("custom", "flag-root"),
 		},
 		{
 			name:       "relative path resolved to absolute",
-			flagValue:  "relative/path",
-			wantSuffix: "relative/path",
+			flagValue:  filepath.Join("relative", "path"),
+			wantSuffix: filepath.Join("relative", "path"),
 		},
 		{
 			name:       "missing config file falls back gracefully",
@@ -70,8 +71,8 @@ func TestResolveRoot(t *testing.T) {
 		},
 		{
 			name:       "non-existent deep path accepted",
-			flagValue:  "/tmp/a/b/notes",
-			wantSuffix: "/tmp/a/b/notes",
+			flagValue:  filepath.Join("/tmp", "a", "b", "notes"),
+			wantSuffix: filepath.Join("a", "b", "notes"),
 		},
 	}
 
@@ -83,7 +84,7 @@ func TestResolveRoot(t *testing.T) {
 			t.Setenv("HOME", tmpDir)
 
 			if tt.tomlRoot != "" {
-				writeToml(t, tmpDir, "root = \""+tt.tomlRoot+"\"\n")
+				writeToml(t, tmpDir, fmt.Sprintf("root = %q\n", tt.tomlRoot))
 			}
 			if tt.envValue != "" {
 				t.Setenv("NOTIZEN_ROOT", tt.envValue)

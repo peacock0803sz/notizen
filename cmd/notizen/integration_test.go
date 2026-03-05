@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -85,7 +86,7 @@ func TestIntegration_DiaryConfigRoot(t *testing.T) {
 	if err := os.MkdirAll(cfgDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	toml := "root = \"" + customRoot + "\"\n"
+	toml := fmt.Sprintf("root = %q\n", customRoot)
 	if err := os.WriteFile(filepath.Join(cfgDir, "config.toml"), []byte(toml), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -135,7 +136,7 @@ func TestIntegration_DiaryConfigRootAutoCreatesDeepPath(t *testing.T) {
 	if err := os.MkdirAll(cfgDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	toml := "root = \"" + deepRoot + "\"\n"
+	toml := fmt.Sprintf("root = %q\n", deepRoot)
 	if err := os.WriteFile(filepath.Join(cfgDir, "config.toml"), []byte(toml), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -190,7 +191,7 @@ func TestIntegration_DiaryEnvOverridesConfig(t *testing.T) {
 	if err := os.MkdirAll(cfgDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	tomlContent := "root = \"" + configRoot + "\"\n"
+	tomlContent := fmt.Sprintf("root = %q\n", configRoot)
 	if err := os.WriteFile(filepath.Join(cfgDir, "config.toml"), []byte(tomlContent), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -295,7 +296,7 @@ func TestIntegration_DiaryFlagOverridesAll(t *testing.T) {
 	if err := os.MkdirAll(cfgDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	tomlContent := "root = \"" + configRoot + "\"\n"
+	tomlContent := fmt.Sprintf("root = %q\n", configRoot)
 	if err := os.WriteFile(filepath.Join(cfgDir, "config.toml"), []byte(tomlContent), 0o644); err != nil {
 		t.Fatal(err)
 	}
