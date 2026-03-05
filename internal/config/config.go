@@ -19,6 +19,7 @@ type RemoteConfig struct {
 }
 
 type tomlFile struct {
+	Root   string `toml:"root"`
 	Remote struct {
 		Host string `toml:"host"`
 		User string `toml:"user"`
@@ -98,6 +99,31 @@ func validate(cfg *RemoteConfig) (*RemoteConfig, error) {
 		}
 	}
 	return cfg, nil
+}
+
+// ResolveRoot determines the notizen root directory.
+// Precedence: flagValue > NOTIZEN_ROOT env > config.toml root key > ~/.notizen.
+func ResolveRoot(flagValue string) (string, error) {
+	if flagValue != "" {
+		return filepath.Abs(flagValue)
+	}
+	if v := os.Getenv("NOTIZEN_ROOT"); v != "" {
+		return filepath.Abs(v)
+	}
+	// Try reading root from config.toml.
+	configPath, err := defaultConfigPath()
+	if err == nil {
+		var f tomlFile
+		if _, err := toml.DecodeFile(configPath, &f); err == nil && f.Root != "" {
+			return filepath.Abs(f.Root)
+		}
+	}
+	// Default: ~/.notizen
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("cannot determine home directory: %w", err)
+	}
+	return filepath.Join(home, ".notizen"), nil
 }
 
 func defaultConfigPath() (string, error) {

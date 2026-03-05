@@ -37,11 +37,17 @@ notizen sync       # rsync source/ to a remote server
 
 ### `notizen diary`
 
-Creates today's diary entry at `~/.notizen/source/Diaries/YYYY/MM/DD.md`, along with year and month directories and their index files.
+Creates today's diary entry at `<root>/source/Diaries/YYYY/MM/DD.md`, along with year and month directories and their index files.
 
 | Flag | Description |
 |------|-------------|
 | `--no-mkdir` | Do not create missing directories |
+
+### Global Flags
+
+| Flag | Description |
+|------|-------------|
+| `--root` | Root directory for notizen data (default: `~/.notizen`) |
 
 ### `notizen commit`
 
@@ -53,7 +59,7 @@ Rsyncs `source/` to a remote server.
 
 | Flag | Description |
 |------|-------------|
-| `-s`, `--src` | Local source directory (default: `~/.notizen/source`) |
+| `-s`, `--src` | Local source directory (default: `<root>/source`) |
 | `-d`, `--dest` | Remote destination path (falls back to config) |
 | `-n`, `--dry-run` | Preview without making changes |
 | `--no-delete` | Keep remote files not present in source |
@@ -72,6 +78,8 @@ Symlinks a repository's `specs/` directory into `source/Agents/Specs/<repo-name>
 Reads `~/.config/notizen/config.toml`, or `$XDG_CONFIG_HOME/notizen/config.toml` if set.
 
 ```toml
+root = "/data/my-notes"
+
 [remote]
 host = "example.com"
 user = "deploy"
@@ -80,10 +88,13 @@ key  = "/home/you/.ssh/id_ed25519"
 path = "/var/www/notes"
 ```
 
+The `root` key sets the notizen data directory (default: `~/.notizen`). Root directory precedence: `--root` flag > `NOTIZEN_ROOT` env var > config.toml `root` key > `~/.notizen`.
+
 Environment variables take precedence over the config file:
 
 | Variable | Field |
 |----------|-------|
+| `NOTIZEN_ROOT` | Root data directory |
 | `NOTIZEN_REMOTE_HOST` | `host` |
 | `NOTIZEN_REMOTE_USER` | `user` |
 | `NOTIZEN_REMOTE_PORT` | `port` |
@@ -103,8 +114,10 @@ Built-in templates:
 
 ## Directory Structure
 
+The root directory defaults to `~/.notizen` but is configurable via `--root`, `NOTIZEN_ROOT`, or config.toml.
+
 ```
-~/.notizen/
+<root>/
   source/
     Diaries/
       YYYY/

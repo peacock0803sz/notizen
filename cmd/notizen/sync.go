@@ -15,7 +15,7 @@ var syncCmd = &cobra.Command{
 }
 
 func init() {
-	syncCmd.Flags().StringP("src", "s", "", "Local source directory (default: ~/.notizen/source)")
+	syncCmd.Flags().StringP("src", "s", "", "Local source directory (default: <root>/source)")
 	syncCmd.Flags().StringP("dest", "d", "", "Remote destination path (from config if unset)")
 	syncCmd.Flags().BoolP("dry-run", "n", false, "Preview without making changes")
 	syncCmd.Flags().Bool("no-delete", false, "Do not delete remote files not in source")
