@@ -140,7 +140,11 @@ func TestProcessFile_OriginalPreservedOnWriteFailure(t *testing.T) {
 	if err := os.Chmod(parent, 0o444); err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { os.Chmod(parent, 0o755) })
+	t.Cleanup(func() {
+		if err := os.Chmod(parent, 0o755); err != nil {
+			t.Logf("cleanup: chmod: %v", err)
+		}
+	})
 
 	_, err := ProcessFile(src, filepath.Join(parent, "sub"))
 	if err == nil {
@@ -176,14 +180,16 @@ func TestArchiveAll_Multiple(t *testing.T) {
 	// Create a valid plan and an already-timestamped plan.
 	mtime := time.Date(2026, 4, 3, 14, 30, 45, 0, time.Local)
 	for name, content := range map[string]string{
-		"valid.md":     "# Valid Plan\n\nBody.\n",
+		"valid.md":       "# Valid Plan\n\nBody.\n",
 		"timestamped.md": "# 09:00:00 Already Done\n\nBody.\n",
 	} {
 		path := filepath.Join(plansDir, name)
 		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 			t.Fatal(err)
 		}
-		os.Chtimes(path, mtime, mtime)
+		if err := os.Chtimes(path, mtime, mtime); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	results, err := ArchiveAll(plansDir, destBase)
@@ -207,7 +213,9 @@ func TestArchiveAll_HardError(t *testing.T) {
 	if err := os.WriteFile(path, []byte("# Plan\n\nBody.\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	os.Chtimes(path, mtime, mtime)
+	if err := os.Chtimes(path, mtime, mtime); err != nil {
+		t.Fatal(err)
+	}
 
 	// Pre-create destination to trigger collision.
 	destDir := filepath.Join(destBase, "2026", "04", "03")
