@@ -22,7 +22,7 @@ func init() {
 }
 
 func main() {
-	rootCmd.AddCommand(diaryCmd, commitCmd, syncCmd, specsCmd)
+	rootCmd.AddCommand(diaryCmd, commitCmd, syncCmd, specsCmd, plansCmd)
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
