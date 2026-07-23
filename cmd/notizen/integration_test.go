@@ -12,6 +12,9 @@ import (
 // buildBinary compiles the CLI binary into a temp directory for end-to-end tests.
 func buildBinary(t *testing.T) string {
 	t.Helper()
+	// Neutralize NOTIZEN_ROOT from the developer's environment so the binary
+	// under test resolves its root from the per-test HOME instead.
+	t.Setenv("NOTIZEN_ROOT", "")
 	bin := filepath.Join(t.TempDir(), "notizen.out")
 	cmd := exec.Command("go", "build", "-o", bin, ".")
 	cmd.Dir = filepath.Join(".") // cmd/notizen
