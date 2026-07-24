@@ -1,17 +1,24 @@
 package main
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/peacock0803sz/notizen/internal/repolink"
 )
 
 // buildBinary compiles the CLI binary into a temp directory for end-to-end tests.
 func buildBinary(t *testing.T) string {
 	t.Helper()
+	// Neutralize NOTIZEN_ROOT from the developer's environment so the binary
+	// under test resolves its root from the per-test HOME instead.
+	t.Setenv("NOTIZEN_ROOT", "")
 	bin := filepath.Join(t.TempDir(), "notizen.out")
 	cmd := exec.Command("go", "build", "-o", bin, ".")
 	cmd.Dir = filepath.Join(".") // cmd/notizen
@@ -373,5 +380,68 @@ func TestIntegration_SpecsNoArgs_Exit1(t *testing.T) {
 	cmd := exec.Command(bin, "specs")
 	if err := cmd.Run(); err == nil {
 		t.Fatal("specs without args should exit 1")
+	}
+}
+
+func TestIntegration_SuperpowersNoArgs_Exit1(t *testing.T) {
+	bin := buildBinary(t)
+	tmpHome := t.TempDir()
+	t.Setenv("HOME", tmpHome)
+
+	cmd := exec.Command(bin, "superpowers")
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	var exitErr *exec.ExitError
+	if !errors.As(err, &exitErr) {
+		t.Fatalf("superpowers without args should fail with an exit error, got %v", err)
+	}
+	if exitErr.ExitCode() != 1 {
+		t.Errorf("exit code: got %d, want 1", exitErr.ExitCode())
+	}
+	if stderr.Len() == 0 {
+		t.Error("expected a usage error on stderr")
+	}
+}
+
+func TestIntegration_SuperpowersLinksRepo(t *testing.T) {
+	bin := buildBinary(t)
+	tmpHome := t.TempDir()
+	t.Setenv("HOME", tmpHome)
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(tmpHome, ".config"))
+	root := filepath.Join(tmpHome, "notes")
+
+	// --name makes git unnecessary; a plain directory tree is enough.
+	repo := t.TempDir()
+	specsDir := filepath.Join(repo, "docs", "superpowers", "specs")
+	if err := os.MkdirAll(specsDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(specsDir, "demo-design.md"), []byte("stub\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := exec.Command(bin, "--root", root, "superpowers", repo, "-n", "demo")
+	out, err := cmd.Output()
+	if err != nil {
+		t.Fatalf("superpowers command failed: %v, output: %s", err, out)
+	}
+	if !strings.Contains(string(out), "Linked") {
+		t.Errorf("expected 'Linked' on stdout, got: %s", out)
+	}
+	linkDir := filepath.Join(root, "source", "Agents", "Superpowers", "demo")
+	info, err := os.Lstat(linkDir)
+	if err != nil {
+		t.Fatalf("link not created: %v", err)
+	}
+	if info.Mode()&os.ModeSymlink == 0 {
+		t.Error("expected symlink")
+	}
+	data, err := os.ReadFile(filepath.Join(repo, "docs", "superpowers", "index.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasPrefix(string(data), repolink.GeneratedMarker+"\n") {
+		t.Errorf("generated index must carry the marker, got %q", data)
 	}
 }
